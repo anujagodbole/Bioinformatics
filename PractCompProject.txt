@@ -1,0 +1,135 @@
+#The reads are named as follows:
+alpha1_ILMN_R1.fastq.gz 
+beta1_ILMN_R1.fastq.gz 
+gamma1_ILMN_R1.fastq.gz 
+delta1_ILMN_R1.fastq.gz 
+alpha1_ILMN_R2.fastq.gz 
+beta1_ILMN_R2.fastq.gz 
+gamma1_ILMN_R2.fastq.gz 
+delta1_ILMN_R2.fastq.gz 
+alpha2_ILMN_R1.fastq.gz 
+beta2_ILMN_R1.fastq.gz 
+gamma2_ILMN_R1.fastq.gz 
+delta2_ILMN_R1.fastq.gz 
+alpha2_ILMN_R2.fastq.gz 
+beta2_ILMN_R2.fastq.gz 
+gamma2_ILMN_R2.fastq.gz 
+delta2_ILMN_R2.fastq.gz 
+omicron1_ILMN_R1.fastq.gz 
+omicron1_ILMN_R2.fastq.gz 
+omicron2_ILMN_R1.fastq.gz 
+omicron2_ILMN_R2.fastq.gz
+#The adapter sequences from the files were removed using the tool fastp (performed in ubuntu):
+for i in *_R1.fastq.gz; 
+    do 
+    temp1=$(echo ${i} | sed "s/_ILMN\_R1\.fastq.gz//")
+    file1=${temp1}_ILMN_R1.fastq.gz
+    file2=${temp1}_ILMN_R2.fastq.gz
+    fastp -i $file1 -I $file2 -o ${temp1%_*}_ILMN_R1.fastq.gz -O ${temp1%_*}_ILMN_R2.fastq.gz -q 30
+done
+
+*Performed in MobaXterm
+#bwa mem was used to align the reads to the reference sequence
+ for i in *_R1.fastq.gz; 
+    do 
+    temp1=$(echo ${i} | sed "s/_ILMN\_R1\.fastq.gz//")
+    file1=${temp1}_ILMN_R1.fastq.gz
+    file2=${temp1}_ILMN_R2.fastq.gz
+    bwa mem NC_045512.fasta $file1 $file2 > ${file1%%_*}.sam 
+ done
+#Converting sam files to bam format, sorting and indexing bam files 
+for files in *.sam; do samtools -S -b $files > ${files%.*}.bam ; done
+for files in *.bam; do samtools sort $files > ${files%.*}_sorted.bam; done
+for files in *_sorted.bam ; do samtools index $files ; done
+#Creating the bcf and vcf files
+for files in *_sorted.bam; 
+    do 
+    bcftools mpileup -Ob -o ${files%.*}.bcf -f NC_045512.fasta $files
+done
+#Creating vcf files from bcf files 
+for files in *.bcf; 
+    do 
+    bcftools call -vmO z -o ${files%.*}.vcf.gz $files
+done
+#Subset spike region from vcf files. Create an input.tab file with the spike protein regions.
+for files in *.vcf.gz; do bcftools index ; done
+for files in *.vcf.gz ; do bcftools view -R input.tab $files -o ${files%%_*}_final.vcf.gz ; done
+for files in *_final.vcf.gz; do bcftools index $files; done
+#Unzip the vcf files and annotation
+gunzip *_final.vcf.gz
+
+
+Using the R Package called VariantAnnotator to annotate the variants using a sorted reference gff file.
+#Import packages
+pacman::p_load(
+  VariantAnnotation,
+  genbankr,
+  tidyverse, 
+  GenomicFeatures,
+  randomcoloR,
+  gtools,
+  GenomeInfoDb
+)
+#Import vcf files 
+alpha1 <- readVcf("alpha1_final.vcf")
+alpha2 <- readVcf("alpha2_final.vcf")
+beta1 <- readVcf("beta1_final.vcf")
+beta2 <- readVcf("beta2_final.vcf")
+gamma1 <- readVcf("gamma1_final.vcf")
+gamma2 <- readVcf("gamma2_final.vcf")
+delta1 <- readVcf("delta1_final.vcf")
+delta2 <- readVcf("delta2_final.vcf")
+omicron1 <- readVcf("omicron1_final.vcf")
+omicron2 <- readVcf("omicron2_final.vcf")
+
+#Import reference sorted gff file NC_045512 and fasta file
+txdb = makeTxDbFromGFF(file="ref_NC_045512.gff")
+fa = open(FaFile("ref_NC_045512.fasta"))
+
+#Needs seqlevels to be equal
+seqlevels(alpha1) <- seqlevels(txdb)
+seqlevels(alpha2) <- seqlevels(txdb)
+seqlevels(beta1) <- seqlevels(txdb)
+seqlevels(beta2) <- seqlevels(txdb)
+seqlevels(gamma1) <- seqlevels(txdb)
+seqlevels(gamma2) <- seqlevels(txdb)
+seqlevels(delta1) <- seqlevels(txdb)
+seqlevels(delta2) <- seqlevels(txdb)
+seqlevels(omicron1) <- seqlevels(txdb)
+seqlevels(omicron2) <- seqlevels(txdb)
+
+#Predict coding changes for each file as shown below
+coding_alpha1 = predictCoding(alpha1, txdb, fa)
+coding_alpha2 = predictCoding(alpha2, txdb, fa)
+coding_beta1 = predictCoding(beta1, txdb, fa)
+coding_beta2 = predictCoding(beta2, txdb, fa)
+coding_gamma1 = predictCoding(gamma1, txdb, fa)
+coding_gamma2 = predictCoding(gamma2, txdb, fa)
+coding_delta1 = predictCoding(delta1, txdb, fa)
+coding_delta2 = predictCoding(delta2, txdb, fa)
+coding_omicron1 = predictCoding(omicron1, txdb, fa)
+coding_omicron2 = predictCoding(omicron2, txdb, fa)
+
+#converting to a dataframe
+alpha1 <- as.data.frame(coding_alpha1)
+alpha2 <- as.data.frame(coding_alpha2)
+beta1 <- as.data.frame(coding_beta1)
+beta2 <- as.data.frame(coding_beta2)
+delta1 <- as.data.frame (coding_delta1)
+delta2 <- as.data.frame(coding_delta2)
+gamma1 <- as.data.frame(coding_gamma1)
+gamma2 <- as.data.frame(coding_gamma2)
+omicron1 <- as.data.frame(coding_omicron1)
+omicron2 <- as.data.frame(coding_omicron2)
+
+#saving as csv files 
+write_csv(alpha1, "alpha_1.csv")
+write_csv(alpha2, "alpha_2.csv")
+write_csv(beta1, "beta_1.csv")
+write_csv(beta2, "beta_2.csv")
+write_csv(gamma1, "gamma_1.csv")
+write_csv(gamma2, "gamma_2.csv")
+write_csv(delta1, "delta_1.csv")
+write_csv(delta2, "delta_2.csv")
+write_csv(omicron1, "omicron_1.csv")
+write_csv(omicron2, "omicron_2.csv")

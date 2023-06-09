@@ -1,0 +1,108 @@
+1. Write a python program that takes a user input, and print a number pyramid like this.
+For example, it should work like this, if your code is stored as hw2-1.py
+$ python3 hw2-1.py
+Enter a number: 3
+1
+1 2
+1 2 3
+$ 
+$ python3 hw2-1.py
+Enter a number: 5
+1
+1 2
+1 2 3
+1 2 3 4
+1 2 3 4 5
+Answer: I first created the following program in nano and named it hw2-1.py
+rows = int(input("Enter a number: "))
+
+for i in range(rows):
+    for j in range(i+1):
+        print(j+1, end=" ")
+    print("\n")
+Then, I ran the program as follows:
+[student07@HGCNT18 ~]$ python3 hw2-1.py
+Enter a number: 3
+1
+
+1 2
+
+1 2 3
+
+2. Write a python program that takes a positive integer N from user's input and do the following things:
+o	Check whether it's a positive integer. If not, re-take user input.
+o	Calculate sum of squares of numbers from 1 to N
+So if the user inputs 4, the program should output 30 ( = 12 + 22 + 32 + 42 )
+Answer: I first created the following program in nano and named it hw2-2.py
+while True:
+  try:
+    N=int(input("Enter a positive integer:"))
+    if N<= 0:
+       raise ValueError
+    break
+  except ValueError:
+    print("Re-take user input.")
+
+sum_of_squares = 0
+for i in range(1, N + 1):
+  sum_of_squares += i**2
+print(sum_of_squares)
+Then, I ran the program as follows:
+[student07@HGCNT18 ~]$ python3 hw2-2.py
+Enter a positive integer:2
+5
+[student07@HGCNT18 ~]$ python3 hw2-2.py
+Enter a positive integer:3
+14
+[student07@HGCNT18 ~]$ python3 hw2-2.py
+Enter a positive integer:4
+30
+[student07@HGCNT18 ~]$ python3 hw2-2.py
+Enter a positive integer:5
+55
+
+3. Write a python program that takes a series of numbers from user input, until the user enters -999 (refer to Quiz 1 for this) and create a list containing all the numbers that the user entered, and generate these summary statistics:
+
+Maximum value
+Minimum value
+Average
+Answer: I first created the following program in nano and named it hw2-3.py
+cnt = 0
+sum = 0
+value = int(input("Enter a number: "))
+maxVal = value
+minVal = value
+
+my_list = []
+while(value != -999):
+    my_list.append(value)
+    cnt = cnt +1
+    sum = sum + value
+    maxVal = max(maxVal, value)
+    minVal = min(minVal, value)
+    value = int(input("Enter a number: "))
+
+
+print(my_list)
+print("Maximum value: " + str(maxVal))
+print("Minimum value: " + str(minVal))
+print("Average: " + str(sum/cnt))
+Then, I ran the program as follows:
+[student07@HGCNT18 ~]$ python3 hw2-3.py
+Enter a number: 3
+Enter a number: 4
+Enter a number: 5
+Enter a number: -999
+[3, 4, 5]
+Maximum value: 5
+Minimum value: 3
+Average: 4.0
+[student07@HGCNT18 ~]$ python3 hw2-3.py
+Enter a number: 4
+Enter a number: 5
+Enter a number: 6
+Enter a number: -999
+[4, 5, 6]
+Maximum value: 6
+Minimum value: 4
+Average: 5.0
